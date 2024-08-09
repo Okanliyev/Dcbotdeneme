@@ -1,0 +1,109 @@
+import discord
+from discord.ext import commands
+from discord.ui import Button, View
+import operator
+import re
+
+# Botu başlatın
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix='!', intents=intents)
+
+# Global liste
+line = []
+
+# Operatörler
+ops = {
+    '+': operator.add,
+    '-': operator.sub,
+    '×': operator.mul,
+    '÷': operator.truediv,
+    '^': operator.pow
+}
+
+# Buton geri çağırma fonksiyonu
+async def button_callback(interaction: discord.Interaction):
+    global line
+    custom_id = interaction.data['custom_id']
+
+    # Buton ID'sine göre listeye değer ekleyin
+    value_map = {
+        "my1": '1', "my2": '2', "my3": '3', "my+": '+',
+        "my4": '4', "my5": '5', "my6": '6', "my-": '-',
+        "my7": '7', "my8": '8', "my9": '9', "my×": '×',
+        "my0": '0', "my.": '.', "my=": '=', "my÷": '÷',
+        "myC": 'C', "my(": '(', "my)": ')', "my^": '^'
+    }
+
+    value = value_map.get(custom_id)
+
+    if value:
+        if value == '=':
+            # Sonucu hesapla
+            expression = ''.join(line)
+            try:
+                # Düzeltmeler için regex kullan
+                expression = re.sub(r'(\d)([×÷^])(\d)', r'\1\2\3', expression)
+                # Operatörleri uygun Python operatörlerine dönüştür
+                expression = expression.replace('×', '*').replace('÷', '/').replace('^', '**')
+                # Sonucu hesapla
+                result = eval(expression)
+                line = [str(result)]
+            except Exception:
+                line = ["Hata!"]
+        elif value == 'C':
+            # Temizle
+            line = []
+        else:
+            # Diğer butonlar için değeri ekle
+            line.append(value)
+
+    # Listeyi birleştirip temizlenmiş bir şekilde güncelleyin
+    description = ' '.join(line) if line else ''
+    new_embed = discord.Embed(title="Hesap Makinesi", description=description, color=discord.Color.blue())
+    await interaction.response.edit_message(embed=new_embed)
+
+# Bot komutları
+@bot.command(name='hesapMakinesi')
+async def test(ctx):
+
+    embed = discord.Embed(title="Hesap Makinesi", description="", color=discord.Color.blue())
+
+    # Butonlar
+    button1 = Button(label='1', style=discord.ButtonStyle.success, custom_id="my1")
+    button2 = Button(label='2', style=discord.ButtonStyle.success, custom_id="my2")
+    button3 = Button(label='3', style=discord.ButtonStyle.success, custom_id="my3")
+    button4 = Button(label='4', style=discord.ButtonStyle.success, custom_id="my4")
+    button5 = Button(label='5', style=discord.ButtonStyle.success, custom_id="my5")
+    button6 = Button(label='6', style=discord.ButtonStyle.success, custom_id="my6")
+    button7 = Button(label='7', style=discord.ButtonStyle.success, custom_id="my7")
+    button8 = Button(label='8', style=discord.ButtonStyle.success, custom_id="my8")
+    button9 = Button(label='9', style=discord.ButtonStyle.success, custom_id="my9")
+    button0 = Button(label='0', style=discord.ButtonStyle.success, custom_id="my0")
+    buttonPlas = Button(label='+', style=discord.ButtonStyle.primary, custom_id="my+")
+    buttonMin = Button(label='-', style=discord.ButtonStyle.primary, custom_id="my-")
+    buttonX = Button(label='×', style=discord.ButtonStyle.primary, custom_id="my×")
+    buttonBol = Button(label='÷', style=discord.ButtonStyle.primary, custom_id="my÷")
+    buttonBit = Button(label='.', style=discord.ButtonStyle.primary, custom_id="my.")
+    buttonE = Button(label='=', style=discord.ButtonStyle.danger, custom_id="my=")
+    buttonC = Button(label='C', style=discord.ButtonStyle.danger, custom_id="myC")
+    buttonYuzde = Button(label='%', style=discord.ButtonStyle.primary, custom_id="my%")
+    buttonParantez1 = Button(label='(', style=discord.ButtonStyle.primary, custom_id="my(")
+    buttonParantez2 = Button(label=')', style=discord.ButtonStyle.primary, custom_id="my)")
+    buttonUs = Button(label='^', style=discord.ButtonStyle.primary, custom_id="my^")
+
+
+    buttons = [button1, button2, button3, buttonPlas, buttonMin, button4, button5, button6, buttonX, buttonBol, button7, button8, button9, buttonParantez1, buttonParantez2, buttonC, button0,buttonE, buttonBit, buttonUs, ]
+
+    for button in buttons:
+        button.callback = button_callback
+
+    # View
+    view = View()
+    for button in buttons:
+        view.add_item(button)
+
+    await ctx.send(embed=embed, view=view)
+
+# Botu çalıştırın
+bot.run('MTIzNzcxNDkwODkwNTIwOTk0OA.GKjeqP.oPPn1BBl1XxZI6Btxe0uuJrCgmBinEeHYxq1iE')  # Tokeninizi burada güncelleyin
